@@ -27,7 +27,7 @@ void ALU::DoOperation(cpu::Register registerA, cpu::Register registerB,
     break;
   default:
     // No op if it's an OpCode we don't support.
-    std::cerr << "Unknown ALU operation: " << static_cast<int>(op) << std::endl;
+    std::cerr << "ALU: Unknown OpCode: " << static_cast<int>(op) << std::endl;
   }
 }
 
@@ -52,7 +52,7 @@ void ALU::m_addOrSub(bool addition, cpu::Register regA, cpu::Register regB) {
   if (result < 0) {
     m_flags.negative = true;
   }
-  m_destination = result;
+  m_destination = static_cast<cpu::uint_t>(result);
 }
 
 } // namespace alu

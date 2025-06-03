@@ -12,5 +12,5 @@ public:
   cpu::uint_t Size() const;
 
 private:
-  std::vector<cpu::int_t> m_data;
+  std::vector<cpu::uint_t> m_data;
 };

@@ -23,8 +23,7 @@ public:
   Memory& GetMemory();
 
 private:
-  static Register m_operandA(uint inst);
-  static Register m_operandB(uint inst);
+  static std::array<uint_t, 2> m_parse2Args(uint_t value);
 
   alu::ALU m_alu;
   Memory m_memory;
@@ -34,11 +33,11 @@ private:
   Register m_PC{};        // Program counter.
   Register m_aluResult{}; // aluResult buffers the output of the ALU.
 
-  void m_loadRegister(Register& reg, uint_t address);
-  void m_storeRegister(Register reg, uint_t address);
-  void m_moveRegister(Register src, Register& dest);
+  void m_loadRegister(uint_t regID, uint_t address);
+  void m_storeRegister(uint_t regID, uint_t address);
+  void m_moveRegister(uint_t srcID, uint_t destID);
 
-  void m_aluOperation(Register inputA, Register inputB, OpCode op);
+  void m_aluOperation(uint_t inputA, uint_t inputB, OpCode op);
 
   bool m_halt{};
 };

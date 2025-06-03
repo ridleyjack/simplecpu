@@ -1,3 +1,9 @@
 #pragma once
 
-void RunAllTests();
+void RunAllMemTests();
+void RunAllCPUTests();
+
+inline void RunAllTests() {
+  RunAllMemTests();
+  RunAllCPUTests();
+}

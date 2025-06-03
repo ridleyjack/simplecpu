@@ -11,6 +11,8 @@ add_library(cpu4
 target_include_directories(cpu4 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 add_executable(cpu4bit main.cpp
-        test/Test.h test/Test.cpp)
+        test/CPUTest.cpp
+        test/MemTest.cpp
+        test/Test.h)
 
 target_link_libraries(cpu4bit PRIVATE cpu4)

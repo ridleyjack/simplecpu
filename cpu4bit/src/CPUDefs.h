@@ -19,7 +19,8 @@ enum class OpCode : uint_t {
   Add = 5,
   Sub = 6,
   Jump = 7,
-  JumpNeg = 8,
+  JumpZ = 8,
+  JumpNZ = 9,
 };
 
 } // namespace cpu

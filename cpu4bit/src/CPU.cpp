@@ -1,9 +1,16 @@
 #include "CPU.h"
 
 #include <iostream>
-#include <utility>
 
 namespace cpu {
+std::array<uint_t, 2> CPU::m_parse2Args(uint_t value) {
+  constexpr uint_t highMask{0x03 << 2}; // 1100
+  constexpr uint_t lowMask{0x03};       // 0011
+
+  const uint_t arg0 = (value & highMask) >> 2;
+  const uint_t arg1 = (value & lowMask);
+  return {arg0, arg1};
+}
 
 CPU::CPU() : m_alu{m_aluResult}, m_memory{16} {}
 void CPU::Run() {
@@ -18,77 +25,73 @@ void CPU::Cycle() {
   m_PC++;
 
   // Decode.
-  constexpr cpu::uint_t opMask{0xF0};
-  cpu::uint_t op = (m_IS & opMask) >> 4;
-
-  // Some instructions specify an address/value via the operand.
-  constexpr cpu::uint_t valueMask{0x0F};
-  cpu::uint_t value = (m_IS & valueMask);
-
-  // Some instructions specify the registers via operands.
-  Register regA = m_operandA(value);
-  Register regB = m_operandB(value);
+  auto op{static_cast<OpCode>(m_IS)};
 
   // Execute.
-  switch (static_cast<OpCode>(op)) {
+  std::array<uint_t, 2> args{};
+  uint_t& arg0 = args[0];
+
+  switch (op) {
   case OpCode::LoadA:
-    m_loadRegister(m_registers[0], value);
+    arg0 = m_memory.Load(m_PC++);
+    m_loadRegister(0, arg0);
     break;
 
   case OpCode::LoadB:
-    m_loadRegister(m_registers[1], value);
+    arg0 = m_memory.Load(m_PC++);
+    m_loadRegister(1, arg0);
     break;
 
   case OpCode::StoreA:
-    m_storeRegister(m_registers[0], value);
+    arg0 = m_memory.Load(m_PC++);
+    m_storeRegister(0, arg0);
     break;
 
   case OpCode::Mov:
-    if (regA == RegUnspecified || regB == RegUnspecified) {
-      std::cout << "Mov requires two registers to be specified via operands";
-      m_halt = true;
-      return;
-    }
-    m_moveRegister(m_registers[regA], m_registers[regB]);
+    args = m_parse2Args(m_memory.Load(m_PC++));
+    m_moveRegister(args[0], args[1]);
     break;
 
   case OpCode::Add:
-    if (regA == RegUnspecified || regB == RegUnspecified) {
-      std::cout << "Add requires two registers to be specified via operands";
-      m_halt = true;
-      return;
-    }
-    m_aluOperation(m_registers[regA], m_registers[regB], OpCode::Add);
+    args = m_parse2Args(m_memory.Load(m_PC++));
+    m_aluOperation(args[0], args[1], OpCode::Add);
     m_registers[0] = m_aluResult;
     break;
 
   case OpCode::Sub:
-    if (regA == RegUnspecified || regB == RegUnspecified) {
-      std::cout << "Sub requires two registers to be specified via operands";
-      m_halt = true;
-      return;
-    }
-    m_aluOperation(m_registers[regA], m_registers[regB], OpCode::Sub);
+    args = m_parse2Args(m_memory.Load(m_PC++));
+    m_aluOperation(args[0], args[1], OpCode::Sub);
     m_registers[0] = m_aluResult;
     break;
 
   case OpCode::Jump:
-    m_PC = value;
+    arg0 = m_memory.Load(m_PC);
+    m_PC = arg0;
     break;
 
-  case OpCode::JumpNeg:
-    if (m_alu.GetFlags().negative) {
-      m_PC = value;
+  case OpCode::JumpZ:
+    arg0 = m_memory.Load(m_PC++);
+    if (m_alu.GetFlags().zero) {
+      m_PC = arg0;
+    }
+    break;
+
+  case OpCode::JumpNZ:
+    arg0 = m_memory.Load(m_PC++);
+    if (!m_alu.GetFlags().zero) {
+      m_PC = arg0;
     }
     break;
 
   default:
     std::cout << "Unknown opcode: " << static_cast<uint>(op) << '\n';
+
   case OpCode::Halt:
     m_halt = true;
     break;
   }
 }
+
 Register CPU::GetRegisterA() const {
   return m_registers[0];
 }
@@ -105,36 +108,20 @@ Memory& CPU::GetMemory() {
   return m_memory;
 }
 
-void CPU::m_loadRegister(Register& reg, uint_t address) {
-  reg = m_memory.Load(address);
+void CPU::m_loadRegister(uint_t regID, uint_t address) {
+  m_registers[regID] = m_memory.Load(address);
 }
 
-void CPU::m_storeRegister(Register reg, uint_t address) {
-  m_memory.Store(reg, address);
-}
-void CPU::m_moveRegister(Register src, Register& dest) {
-  dest = src;
+void CPU::m_storeRegister(uint_t regID, uint_t address) {
+  m_memory.Store(m_registers[regID], address);
 }
 
-void CPU::m_aluOperation(Register inputA, Register inputB, OpCode op) {
-  m_alu.DoOperation(inputA, inputB, op);
+void CPU::m_moveRegister(uint_t srcID, uint_t destID) {
+  m_registers[destID] = m_registers[srcID];
 }
 
-Register CPU::m_operandA(uint inst) {
-  if (inst & 0x04) {
-    return 0;
-  } else if (inst & 0x08) {
-    return 1;
-  }
-  return RegUnspecified;
+void CPU::m_aluOperation(uint_t inputA, uint_t inputB, OpCode op) {
+  m_alu.DoOperation(m_registers[inputA], m_registers[inputB], op);
 }
 
-Register CPU::m_operandB(uint inst) {
-  if (inst & 0x01) {
-    return 0;
-  } else if (inst & 0x02) {
-    return 1;
-  }
-  return RegUnspecified;
-}
 } // namespace cpu

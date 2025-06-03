@@ -1,8 +1,9 @@
 #include "CPU.h"
-#include "test/Test.h"
 
 #include <bitset>
 #include <iostream>
+
+#include "test/Test.h"
 
 int main() {
   RunAllTests();
